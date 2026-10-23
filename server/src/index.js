@@ -1,10 +1,13 @@
 import "dotenv/config";
+import dns from "node:dns/promises";
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { getDatabase, closeDatabase } from "./db.js";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
 const port = process.env.PORT || 4000;
