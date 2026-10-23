@@ -27,7 +27,12 @@ async function connectAndSeed() {
     database.collection("contact_messages").createIndex({ id: 1 }, { unique: true }),
     database.collection("contact_messages").createIndex({ createdAt: -1 }),
     database.collection("classes").createIndex({ id: 1 }, { unique: true }),
-    database.collection("classes").createIndex({ status: 1, department: 1 })
+    database.collection("classes").createIndex({ status: 1, department: 1 }),
+    database.collection("student_profiles").createIndex({ id: 1 }, { unique: true }),
+    database.collection("student_profiles").createIndex({ studentId: 1 }, { unique: true }),
+    database.collection("assignments").createIndex({ id: 1 }, { unique: true }),
+    database.collection("assignments").createIndex({ studentId: 1, createdAt: -1 }),
+    database.collection("results").createIndex({ studentId: 1 }, { unique: true })
   ]);
   await ensureAdministrator(database);
   return database;

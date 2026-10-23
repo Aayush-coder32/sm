@@ -41,6 +41,25 @@ const classSchema = z.object({
   photo: z.string().startsWith("data:image/").max(5_000_000),
   signature: z.string().startsWith("data:image/").max(2_000_000)
 });
+const profileSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  branch: z.string().trim().min(2).max(100),
+  section: z.string().trim().min(1).max(20),
+  photo: z.string().startsWith("data:image/").max(5_000_000),
+  signature: z.string().startsWith("data:image/").max(2_000_000)
+});
+const assignmentSchema = z.object({
+  subject: z.string().trim().min(2).max(100),
+  unit: z.string().trim().min(1).max(100),
+  topic: z.string().trim().min(2).max(150),
+  description: z.string().trim().min(10).max(2000),
+  file: z.string().startsWith("data:").max(8_000_000)
+});
+const resultSchema = z.object({
+  sessional: z.coerce.number().min(0).max(100),
+  put: z.coerce.number().min(0).max(100),
+  assignment: z.coerce.number().min(0).max(100)
+});
 
 function publicUser(user) {
   const { password, ...safeUser } = user;
@@ -107,6 +126,71 @@ app.post("/api/classes", requireAuth, requireRole("faculty", "administrator"), a
     };
     await (await getDatabase()).collection("classes").insertOne(classRecord);
     res.status(201).json({ class: classRecord });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/student-profile", requireAuth, requireRole("student"), async (req, res, next) => {
+  const parsed = profileSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Name, branch, section, photograph, and signature are required." });
+  try {
+    const profile = { id: `profile-${Date.now()}`, studentId: req.user.id, ...parsed.data, status: "pending", createdAt: new Date().toISOString() };
+    const database = await getDatabase();
+    await database.collection("student_profiles").replaceOne({ studentId: req.user.id }, profile, { upsert: true });
+    res.status(201).json({ profile });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/submissions", requireAuth, async (req, res, next) => {
+  try {
+    const database = await getDatabase();
+    const filter = req.user.role === "student" ? { studentId: req.user.id } : {};
+    const [profiles, assignments] = await Promise.all([
+      database.collection("student_profiles").find(filter).sort({ createdAt: -1 }).toArray(),
+      database.collection("assignments").find(filter).sort({ createdAt: -1 }).toArray()
+    ]);
+    res.json({ profiles, assignments });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/assignments", requireAuth, requireRole("student"), async (req, res, next) => {
+  const parsed = assignmentSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Subject, unit, topic, description, and assignment file are required." });
+  try {
+    const assignment = { id: `assignment-${Date.now()}`, studentId: req.user.id, ...parsed.data, status: "submitted", marks: null, feedback: "", createdAt: new Date().toISOString() };
+    await (await getDatabase()).collection("assignments").insertOne(assignment);
+    res.status(201).json({ assignment });
+  } catch (error) { next(error); }
+});
+
+app.patch("/api/assignments/:id/review", requireAuth, requireRole("faculty", "administrator"), async (req, res, next) => {
+  const parsed = z.object({ marks: z.coerce.number().min(0).max(100), feedback: z.string().trim().max(1000).default("") }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Enter valid marks between 0 and 100." });
+  try {
+    const result = await (await getDatabase()).collection("assignments").findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { marks: parsed.data.marks, feedback: parsed.data.feedback, status: "reviewed", reviewedBy: req.user.id, reviewedAt: new Date().toISOString() } },
+      { returnDocument: "after" }
+    );
+    if (!result) return res.status(404).json({ message: "Assignment submission not found." });
+    res.json({ assignment: result });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/results", requireAuth, async (req, res, next) => {
+  try {
+    const database = await getDatabase();
+    const results = await database.collection("results").find(req.user.role === "student" ? { studentId: req.user.id } : {}).toArray();
+    res.json({ results });
+  } catch (error) { next(error); }
+});
+
+app.patch("/api/results/:studentId", requireAuth, requireRole("faculty", "administrator"), async (req, res, next) => {
+  const parsed = resultSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Enter valid marks between 0 and 100." });
+  try {
+    const result = { studentId: req.params.studentId, ...parsed.data, updatedBy: req.user.id, updatedAt: new Date().toISOString() };
+    await (await getDatabase()).collection("results").replaceOne({ studentId: result.studentId }, result, { upsert: true });
+    res.json({ result });
   } catch (error) { next(error); }
 });
 
