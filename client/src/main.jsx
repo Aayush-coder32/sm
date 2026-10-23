@@ -172,6 +172,36 @@ function AssistantPage() {
   return <div className="dedicated-page assistant-page"><div className="assistant-hero"><span className="assistant-orb"><Sparkles size={26} /></span><div><span className="toolbar-label">CAMPUSPULSE AI</span><h2>Your academic co-pilot.</h2><p>Get clear answers about notices, deadlines, courses, and campus life.</p></div></div><div className="assistant-suggestions"><span>Try asking</span>{["What is due this week?", "Summarize my latest notices", "Help me plan my exams"].map((suggestion) => <button key={suggestion}>{suggestion}<ArrowUpRight size={14} /></button>)}</div><div className="assistant-composer"><div className="assistant-message"><Sparkles size={17} /><span>Hi! What would you like to know about your campus?</span></div><div className="composer-row"><input placeholder="Ask anything about your campus..." /><button><ArrowRight size={17} /></button></div></div></div>;
 }
 
+function PublishNoticePage({ onPublished }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
+
+  async function submitNotice(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setFeedback({ type: "", text: "" });
+    const form = new FormData(event.currentTarget);
+    try {
+      const { data } = await api.post("/notices", {
+        title: form.get("title"),
+        category: form.get("category"),
+        priority: form.get("priority"),
+        audience: form.get("audience"),
+        summary: form.get("summary")
+      }, { headers: { Authorization: `Bearer ${localStorage.getItem("campuspulse_token")}` } });
+      event.currentTarget.reset();
+      setFeedback({ type: "success", text: "Notice published successfully. It is now visible on the student dashboard." });
+      onPublished(data.notice);
+    } catch (error) {
+      setFeedback({ type: "error", text: error.response?.data?.message || "Unable to publish this notice." });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return <div className="dedicated-page publish-page"><div className="publish-intro"><div><span className="toolbar-label">CAMPUS COMMUNICATION</span><h2>Share what matters.</h2><p>Create a clear update and send it to the right students.</p></div><span className="publish-icon"><FileText size={27} /></span></div><form className="notice-composer" onSubmit={submitNotice}><div className="composer-card"><span className="composer-number">01</span><div><strong>Message basics</strong><small>Give your notice a clear identity.</small></div><label>Notice title<input name="title" placeholder="e.g. Mid-semester examination schedule" minLength="5" maxLength="120" required /></label><label>Summary<textarea name="summary" placeholder="Write a short, useful summary for students..." minLength="5" maxLength="500" required /></label></div><div className="composer-card"><span className="composer-number">02</span><div><strong>Reach the right audience</strong><small>Choose who should see this update.</small></div><label>Category<select name="category" defaultValue="Academic"><option>Academic</option><option>Events</option><option>General</option><option>Examination</option><option>Placement</option></select></label><label>Audience<select name="audience" defaultValue="All students"><option>All students</option><option>General</option><option>Computer Science</option><option>Mechanical Engineering</option><option>Chemical Engineering</option></select></label></div><div className="composer-card"><span className="composer-number">03</span><div><strong>Set the priority</strong><small>Help students understand urgency.</small></div><div className="priority-options"><label><input type="radio" name="priority" value="High" defaultChecked /><span className="priority-choice high-choice">High <small>Important</small></span></label><label><input type="radio" name="priority" value="Medium" /><span className="priority-choice medium-choice">Medium <small>Standard</small></span></label><label><input type="radio" name="priority" value="Low" /><span className="priority-choice low-choice">Low <small>Informational</small></span></label></div></div><div className="composer-card publish-preview-card"><span className="composer-number">04</span><div><strong>Ready to publish?</strong><small>Your notice will be delivered to the selected audience.</small></div><div className="publish-review"><Bell size={17} /><span>Students will see this in <b>Recent notices</b> on their dashboard.</span></div><button className="primary-button publish-button" disabled={submitting}>{submitting ? "Publishing..." : "Publish notice"} <ArrowRight size={17} /></button>{feedback.text && <div className={`publish-feedback ${feedback.type}`}>{feedback.text}</div>}</div></form></div>;
+}
+
 function EmptyPage({ icon: Icon, title, text }) {
   return <div className="full-empty"><span className="empty-icon"><Icon size={22} /></span><strong>{title}</strong><p>{text}</p></div>;
 }
