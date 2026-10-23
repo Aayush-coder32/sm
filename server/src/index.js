@@ -33,6 +33,14 @@ const contactSchema = z.object({
   subject: z.string().trim().min(3).max(120),
   message: z.string().trim().min(10).max(2000)
 });
+const classSchema = z.object({
+  department: z.string().trim().min(2).max(80),
+  branch: z.string().trim().min(2).max(100),
+  facultyName: z.string().trim().min(2).max(100),
+  facultyEmail: z.string().email(),
+  photo: z.string().startsWith("data:image/").max(5_000_000),
+  signature: z.string().startsWith("data:image/").max(2_000_000)
+});
 
 function publicUser(user) {
   const { password, ...safeUser } = user;
@@ -72,6 +80,33 @@ app.post("/api/contact", async (req, res, next) => {
     };
     await (await getDatabase()).collection("contact_messages").insertOne(message);
     res.status(201).json({ message: "Thanks for reaching out. Our campus team will get back to you soon." });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/classes", requireAuth, async (req, res, next) => {
+  try {
+    const database = await getDatabase();
+    const filter = req.user.role === "student" && req.user.department
+      ? { status: "active", department: req.user.department }
+      : { status: "active" };
+    const classes = await database.collection("classes").find(filter).sort({ createdAt: -1 }).toArray();
+    res.json({ classes });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/classes", requireAuth, requireRole("faculty", "administrator"), async (req, res, next) => {
+  const parsed = classSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Please complete the department, branch, faculty details, photo, and signature." });
+  try {
+    const classRecord = {
+      id: `class-${Date.now()}`,
+      ...parsed.data,
+      status: "active",
+      createdBy: req.user.id,
+      createdAt: new Date().toISOString()
+    };
+    await (await getDatabase()).collection("classes").insertOne(classRecord);
+    res.status(201).json({ class: classRecord });
   } catch (error) { next(error); }
 });
 

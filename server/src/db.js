@@ -25,7 +25,9 @@ async function connectAndSeed() {
     database.collection("notices").createIndex({ id: 1 }, { unique: true }),
     database.collection("deadlines").createIndex({ id: 1 }, { unique: true }),
     database.collection("contact_messages").createIndex({ id: 1 }, { unique: true }),
-    database.collection("contact_messages").createIndex({ createdAt: -1 })
+    database.collection("contact_messages").createIndex({ createdAt: -1 }),
+    database.collection("classes").createIndex({ id: 1 }, { unique: true }),
+    database.collection("classes").createIndex({ status: 1, department: 1 })
   ]);
   await ensureAdministrator(database);
   return database;
