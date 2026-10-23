@@ -24,7 +24,8 @@ const registerSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: z.string().email(),
   password: z.string().min(6).max(128),
-  department: z.string().trim().min(2).max(80).default("General")
+  department: z.string().trim().min(2).max(80).default("General"),
+  role: z.enum(["student", "faculty"]).default("student")
 });
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -99,7 +100,7 @@ app.post("/api/auth/register", async (req, res, next) => {
       name: parsed.data.name,
       email,
       password: await bcrypt.hash(parsed.data.password, 12),
-      role: "student",
+      role: parsed.data.role,
       department: parsed.data.department,
       semester: "1st"
     };
