@@ -85,6 +85,34 @@ function Landing({ onGetStarted }) {
   </main>;
 }
 
+function ContactSection() {
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
+
+  async function submitContact(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setFeedback({ type: "", text: "" });
+    const form = new FormData(event.currentTarget);
+    try {
+      const { data } = await api.post("/contact", {
+        name: form.get("name"),
+        email: form.get("email"),
+        subject: form.get("subject"),
+        message: form.get("message")
+      });
+      event.currentTarget.reset();
+      setFeedback({ type: "success", text: data.message });
+    } catch (error) {
+      setFeedback({ type: "error", text: error.response?.data?.message || "We could not send your message. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return <section id="contact" className="contact-section"><div className="contact-intro"><p className="eyebrow">LET'S CONNECT</p><h2>Have a question?<br /><span>We are here.</span></h2><p>Whether you are a student, faculty member, or campus leader, our team would love to hear from you.</p><div className="contact-details"><span><Mail size={16} /> hello@campuspulse.edu</span><span><Clock3 size={16} /> Mon–Fri · 9:00 AM–6:00 PM</span></div></div><form className="contact-form" onSubmit={submitContact}><div className="contact-form-heading"><strong>Send us a message</strong><span>We usually reply within one working day.</span></div><div className="contact-fields"><label>Name<input name="name" type="text" placeholder="Your name" minLength="2" maxLength="80" required /></label><label>Email<input name="email" type="email" placeholder="you@college.edu" required /></label></div><label>Subject<input name="subject" type="text" placeholder="How can we help?" minLength="3" maxLength="120" required /></label><label>Message<textarea name="message" placeholder="Tell us a little more..." minLength="10" maxLength="2000" required /></label>{feedback.text && <div className={`contact-feedback ${feedback.type}`}>{feedback.text}</div>}<button className="hero-button contact-submit" disabled={submitting}>{submitting ? "Sending..." : "Send message"} <ArrowRight size={16} /></button></form></section>;
+}
+
 function Login({ selectedRole, setSelectedRole, login, register, error, loading, onBack }) {
   const [mode, setMode] = useState("login");
   const isRegistering = mode === "register";
