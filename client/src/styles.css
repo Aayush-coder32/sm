@@ -74,6 +74,28 @@
 .gallery-card figcaption strong, .gallery-card figcaption span { display: block; }
 .gallery-card figcaption strong { font-size: 14px; }
 .gallery-card figcaption span { margin-top: 3px; color: #d4e2f3; font-size: 10px; }
+.about-section { max-width: 1200px; margin: 0 auto 90px; padding: 0 30px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 70px; align-items: center; }
+.about-copy h2 { max-width: 580px; margin: 0 0 20px; color: #172f52; font-size: 42px; line-height: 1.08; letter-spacing: -.07em; }
+.about-copy h2 span { color: #3976bc; }
+.about-copy > p:not(.eyebrow) { max-width: 520px; color: #8492a5; font-size: 13px; line-height: 1.8; }
+.about-points { display: grid; gap: 12px; margin-top: 28px; max-width: 470px; }
+.about-points div { display: flex; gap: 14px; align-items: center; padding: 13px 0; border-top: 1px solid #e5edf4; }
+.about-points strong { color: #3976bc; font: 500 10px "DM Mono", monospace; }
+.about-points span { color: #4c6580; font-size: 12px; }
+.about-card { padding: 35px; border-radius: 20px; color: #fff; background: linear-gradient(140deg, #183d78, #496eb0); box-shadow: 0 20px 40px rgba(24,61,120,.2); }
+.about-card-icon { display: grid; place-items: center; width: 47px; height: 47px; margin-bottom: 35px; color: #d9ff7e; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; background: rgba(255,255,255,.12); }
+.about-card > strong { display: block; font-size: 22px; letter-spacing: -.05em; }
+.about-card > p { max-width: 240px; margin: 10px 0 30px; color: #ceddf0; font-size: 12px; line-height: 1.7; }
+.about-stat-row { display: flex; gap: 25px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.2); color: #c6d8ed; font-size: 10px; }
+.about-stat-row b { display: block; margin-bottom: 4px; color: #d9ff7e; font-size: 20px; }
+.contact-section { max-width: 1200px; margin: 0 auto 90px; padding: 0 30px; display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; align-items: start; }
+.contact-intro h2 { margin: 0 0 18px; color: #172f52; font-size: 42px; line-height: 1.08; letter-spacing: -.07em; }
+.contact-intro h2 span { color: #3976bc; }
+.contact-intro > p:not(.eyebrow) { max-width: 340px; color: #8492a5; font-size: 13px; line-height: 1.8; }
+.contact-details { display: grid; gap: 12px; margin-top: 25px; color: #607993; font-size: 11px; }.contact-details span { display: flex; align-items: center; gap: 9px; }.contact-details svg { color: #3976bc; }
+.contact-form { display: grid; gap: 15px; padding: 28px; border: 1px solid #dfe8f2; border-radius: 18px; background: #fff; box-shadow: 0 13px 32px rgba(40,72,114,.07); }
+.contact-form-heading { display: grid; gap: 5px; margin-bottom: 3px; }.contact-form-heading strong { color: #19365d; font-size: 19px; letter-spacing: -.04em; }.contact-form-heading span { color: #8b9aab; font-size: 11px; }
+.contact-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }.contact-form label { display: grid; gap: 8px; color: #536078; font-size: 11px; font-weight: 700; }.contact-form input, .contact-form textarea { width: 100%; border: 1px solid #dfe7f0; border-radius: 10px; padding: 12px 13px; color: #172033; outline: 0; background: #fbfdff; font-size: 12px; }.contact-form textarea { min-height: 105px; resize: vertical; }.contact-form input:focus, .contact-form textarea:focus { border-color: #6d9fe4; box-shadow: 0 0 0 3px rgba(109,159,228,.13); }.contact-submit { justify-self: start; margin-top: 2px; }.contact-submit:disabled { opacity: .7; cursor: wait; }.contact-feedback { padding: 10px 12px; border-radius: 8px; font-size: 11px; }.contact-feedback.success { color: #23734d; background: #eaf8f0; border: 1px solid #c7ecd7; }.contact-feedback.error { color: #a33a46; background: #fff0f1; border: 1px solid #ffd3d7; }
 .landing-footer { max-width: none; margin: 0; padding: 0 max(30px, calc((100% - 1140px) / 2)); color: #b8c2d0; background: #070d17; font-size: 10px; }
 .footer-main { display: grid; grid-template-columns: 1.15fr 1.6fr .85fr; gap: 65px; padding: 55px 0 48px; }
 .footer-brand-column .landing-brand { color: #fff; } .footer-brand-column p { color: #aeb9c8; font-size: 12px; line-height: 1.7; margin: 17px 0 20px; }
