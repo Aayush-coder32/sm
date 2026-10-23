@@ -4,7 +4,7 @@ import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, Ch
 import axios from "axios";
 import "./styles.css";
 
-const api = axios.create({ baseURL: "/api" });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || "/api" });
 const demoAccounts = { student: "student@college.edu", faculty: "faculty@college.edu", administrator: "admin@college.edu" };
 const roles = { student: { label: "Student", theme: "student", icon: BookOpen }, faculty: { label: "Faculty", theme: "faculty", icon: Users }, administrator: { label: "Administrator", theme: "admin", icon: ShieldCheck } };
 
