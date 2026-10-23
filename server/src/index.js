@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { getDatabase, closeDatabase } from "./db.js";
 
@@ -15,6 +16,12 @@ app.use(express.json());
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6)
+});
+const registerSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().email(),
+  password: z.string().min(6).max(128),
+  department: z.string().trim().min(2).max(80).default("General")
 });
 
 function publicUser(user) {
@@ -47,10 +54,33 @@ app.post("/api/auth/login", async (req, res, next) => {
   if (!parsed.success) return res.status(400).json({ message: "Enter a valid email and password." });
   try {
     const database = await getDatabase();
-    const user = await database.collection("users").findOne({ email: parsed.data.email.toLowerCase(), password: parsed.data.password });
-    if (!user) return res.status(401).json({ message: "Invalid credentials." });
+    const user = await database.collection("users").findOne({ email: parsed.data.email.toLowerCase() });
+    if (!user || !(await bcrypt.compare(parsed.data.password, user.password))) return res.status(401).json({ message: "Invalid credentials." });
     const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, jwtSecret, { expiresIn: "2h" });
     res.json({ token, user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/auth/register", async (req, res, next) => {
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Enter a name, valid email, and password of at least 6 characters." });
+  try {
+    const database = await getDatabase();
+    const email = parsed.data.email.toLowerCase();
+    const existingUser = await database.collection("users").findOne({ email });
+    if (existingUser) return res.status(409).json({ message: "An account with this email already exists." });
+    const user = {
+      id: `user-${Date.now()}`,
+      name: parsed.data.name,
+      email,
+      password: await bcrypt.hash(parsed.data.password, 12),
+      role: "student",
+      department: parsed.data.department,
+      semester: "1st"
+    };
+    await database.collection("users").insertOne(user);
+    const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, jwtSecret, { expiresIn: "2h" });
+    res.status(201).json({ token, user: publicUser(user) });
   } catch (error) { next(error); }
 });
 
