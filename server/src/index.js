@@ -60,6 +60,12 @@ const resultSchema = z.object({
   put: z.coerce.number().min(0).max(100),
   assignment: z.coerce.number().min(0).max(100)
 });
+const examinationSchema = z.object({
+  examType: z.string().trim().min(2).max(80),
+  semester: z.string().trim().min(1).max(30),
+  subjects: z.string().trim().min(2).max(500),
+  photograph: z.string().startsWith("data:image/").max(5_000_000)
+});
 
 function publicUser(user) {
   const { password, ...safeUser } = user;
@@ -186,6 +192,63 @@ app.get("/api/results", requireAuth, async (req, res, next) => {
     const database = await getDatabase();
     const results = await database.collection("results").find(req.user.role === "student" ? { studentId: req.user.id } : {}).toArray();
     res.json({ results });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/exam-status", requireAuth, async (req, res, next) => {
+  try {
+    const database = await getDatabase();
+    const [fee, form] = await Promise.all([
+      database.collection("academic_fees").findOne({ studentId: req.user.id }),
+      database.collection("examination_forms").findOne({ studentId: req.user.id })
+    ]);
+    res.json({ fee, form, admitCardReady: Boolean(fee?.status === "approved" && form?.status === "submitted") });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/academic-fees", requireAuth, requireRole("student"), async (req, res, next) => {
+  const amount = z.coerce.number().positive().safeParse(req.body.amount);
+  if (!amount.success) return res.status(400).json({ message: "Enter a valid academic fee amount." });
+  try {
+    const fee = { id: `fee-${Date.now()}`, studentId: req.user.id, amount: amount.data, semester: req.body.semester || "Current semester", status: "pending", createdAt: new Date().toISOString() };
+    await (await getDatabase()).collection("academic_fees").replaceOne({ studentId: req.user.id }, fee, { upsert: true });
+    res.status(201).json({ fee });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/examination-form", requireAuth, requireRole("student"), async (req, res, next) => {
+  const parsed = examinationSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Complete the examination form and upload a photograph." });
+  try {
+    const database = await getDatabase();
+    const fee = await database.collection("academic_fees").findOne({ studentId: req.user.id });
+    if (fee?.status !== "approved") return res.status(400).json({ message: "Academic fee approval is required before submitting the examination form." });
+    const form = { id: `exam-form-${Date.now()}`, studentId: req.user.id, ...parsed.data, status: "submitted", submittedAt: new Date().toISOString() };
+    await database.collection("examination_forms").replaceOne({ studentId: req.user.id }, form, { upsert: true });
+    res.status(201).json({ form });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/exam-requests", requireAuth, requireRole("faculty", "administrator"), async (_req, res, next) => {
+  try {
+    const database = await getDatabase();
+    const [fees, forms] = await Promise.all([
+      database.collection("academic_fees").find({ status: "pending" }).sort({ createdAt: -1 }).toArray(),
+      database.collection("examination_forms").find().sort({ submittedAt: -1 }).toArray()
+    ]);
+    res.json({ fees, forms });
+  } catch (error) { next(error); }
+});
+
+app.patch("/api/academic-fees/:studentId/approve", requireAuth, requireRole("faculty", "administrator"), async (req, res, next) => {
+  try {
+    const result = await (await getDatabase()).collection("academic_fees").findOneAndUpdate(
+      { studentId: req.params.studentId },
+      { $set: { status: "approved", approvedBy: req.user.id, approvedAt: new Date().toISOString() } },
+      { returnDocument: "after" }
+    );
+    if (!result) return res.status(404).json({ message: "Academic fee request not found." });
+    res.json({ fee: result });
   } catch (error) { next(error); }
 });
 

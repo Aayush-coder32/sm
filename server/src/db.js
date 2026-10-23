@@ -33,6 +33,8 @@ async function connectAndSeed() {
     database.collection("assignments").createIndex({ id: 1 }, { unique: true }),
     database.collection("assignments").createIndex({ studentId: 1, createdAt: -1 }),
     database.collection("results").createIndex({ studentId: 1 }, { unique: true })
+    ,database.collection("academic_fees").createIndex({ studentId: 1 }, { unique: true })
+    ,database.collection("examination_forms").createIndex({ studentId: 1 }, { unique: true })
   ]);
   await ensureAdministrator(database);
   return database;
