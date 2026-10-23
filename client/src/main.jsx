@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
 import axios from "axios";
 import "./styles.css";
 
@@ -37,8 +37,31 @@ function App() {
 }
 
 function Landing({ onGetStarted }) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 16);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const closeMobileNav = () => setMobileNavOpen(false);
+
   return <main className="landing-page">
-    <nav className="landing-nav"><div className="landing-brand"><span className="logo-tile"><Sparkles size={18} /></span> CampusPulse</div><div className="landing-links"><a href="#features">Features</a><a href="#portals">Portals</a><a href="#about">About</a></div><button className="landing-login" onClick={onGetStarted}>Sign in <ArrowRight size={16} /></button></nav>
+    <div className="announcement-bar"><span className="announcement-dot" /> <strong>New</strong> AI-powered campus intelligence is here <a href="#features">See what's new <ArrowRight size={13} /></a></div>
+    <nav className={scrolled ? "landing-nav is-scrolled" : "landing-nav"}>
+      <a href="#" className="landing-brand" onClick={closeMobileNav}><span className="logo-tile"><Sparkles size={18} /></span><span>CampusPulse</span></a>
+      <div className={mobileNavOpen ? "landing-links mobile-open" : "landing-links"}>
+        <div className="nav-dropdown"><button type="button" className="nav-link">Platform <ChevronDown size={13} /></button><div className="nav-menu"><a href="#features" onClick={closeMobileNav}><span className="nav-menu-icon blue"><Bell size={15} /></span><span><b>Smart notices</b><small>Important updates, prioritized</small></span></a><a href="#features" onClick={closeMobileNav}><span className="nav-menu-icon green"><CalendarDays size={15} /></span><span><b>Academic planning</b><small>Deadlines and exams in one view</small></span></a><a href="#features" onClick={closeMobileNav}><span className="nav-menu-icon purple"><Sparkles size={15} /></span><span><b>AI assistant</b><small>Turn information into action</small></span></a></div></div>
+        <a href="#portals" onClick={closeMobileNav}>Portals</a>
+        <a href="#features" onClick={closeMobileNav}>How it works</a>
+        <a href="#about" onClick={closeMobileNav}>About</a>
+        <button className="mobile-nav-cta" onClick={() => { closeMobileNav(); onGetStarted(); }}>Open your portal <ArrowRight size={15} /></button>
+      </div>
+      <div className="landing-nav-actions"><button className="landing-login" onClick={onGetStarted}>Sign in <ArrowRight size={16} /></button><button type="button" aria-label={mobileNavOpen ? "Close menu" : "Open menu"} className="landing-menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)}>{mobileNavOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
+    </nav>
     <section className="landing-hero">
       <div className="hero-copy"><div className="hero-pill"><span /> THE SMARTER CAMPUS WORKSPACE</div><h1>Every notice.<br /><span>Right on time.</span></h1><p>CampusPulse brings notices, deadlines, examinations, and campus life into one intelligent workspace built for your entire college community.</p><div className="hero-actions"><button className="hero-button" onClick={onGetStarted}>Explore your portal <ArrowRight size={17} /></button><a href="#features" className="hero-secondary">See how it works <ChevronRight size={16} /></a></div><div className="hero-trust"><div className="avatar-stack"><span>AM</span><span>PS</span><span>NR</span><span>+</span></div><div><strong>Trusted by campus teams</strong><small>Stay informed. Stay ahead.</small></div></div></div>
       <div className="hero-visual"><div className="visual-glow" /><div className="dashboard-preview image-preview"><img src="/OIP%20(1).jpg" alt="CampusPulse student dashboard preview" /></div><div className="floating-card deadline-float"><span className="float-icon"><Clock3 size={16} /></span><span><small>NEXT DEADLINE</small><b>Database systems project</b><em>Due in 5 days</em></span></div><div className="floating-card ai-float"><Sparkles size={17} /><span>Ask your AI assistant anything <ArrowRight size={13} /></span></div></div>
