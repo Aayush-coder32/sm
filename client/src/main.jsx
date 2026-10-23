@@ -127,7 +127,11 @@ function Dashboard({ user, token, onLogout }) {
   useEffect(() => { api.get("/classes", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData((current) => current ? { ...current, classes: result.classes } : current)); }, [token]);
   const role = roles[user.role]; const [data, setData] = useState(null); const [active, setActive] = useState("Overview"); const [search, setSearch] = useState(""); const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { api.get("/dashboard", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData(result)); }, [token]);
-  const nav = user.role === "student" ? ["Overview", "Notices", "My deadlines", "Examinations", "Academic calendar", "AI assistant"] : user.role === "faculty" ? ["Overview", "Publish notice", "My classes", "Submissions", "Calendar"] : ["Overview", "Notice approvals", "Users & roles", "Analytics", "System settings"];
+  useEffect(() => {
+    Promise.all([api.get("/submissions", { headers: { Authorization: `Bearer ${token}` } }), api.get("/results", { headers: { Authorization: `Bearer ${token}` } })])
+      .then(([submissionsResponse, resultsResponse]) => setData((current) => current ? { ...current, ...submissionsResponse.data, results: resultsResponse.data.results } : current));
+  }, [token]);
+  const nav = user.role === "student" ? ["Overview", "Notices", "My deadlines", "Examinations", "Academic calendar", "Results", "AI assistant"] : user.role === "faculty" ? ["Overview", "Publish notice", "My classes", "Submissions", "Calendar"] : ["Overview", "Notice approvals", "Users & roles", "Analytics", "System settings"];
   const filteredNotices = useMemo(() => data?.notices.filter((notice) => `${notice.title} ${notice.summary}`.toLowerCase().includes(search.toLowerCase())) || [], [data, search]);
   if (!data) return <div className="loading-screen"><Sparkles /> Loading your workspace...</div>;
   function handlePublished(notice) {
@@ -148,8 +152,10 @@ function renderPage(active, user, data, onPublished) {
   if (active === "Examinations") return <ExaminationsPage exams={data.exams} />;
   if (active === "Academic calendar") return <CalendarPage deadlines={data.deadlines} exams={data.exams} />;
   if (active === "AI assistant") return <AssistantPage />;
+  if (active === "Results") return <ResultsPage results={data.results || []} />;
   if (active === "Publish notice") return <PublishNoticePage onPublished={onPublished} />;
   if (active === "My classes") return <MyClassesPage onCreated={(classRecord) => { data.classes = [classRecord, ...(data.classes || [])]; }} />;
+  if (active === "Submissions") return <SubmissionsPage token={data.token} submissions={data} />;
   return <Overview user={user} data={data} />;
 }
 
@@ -252,7 +258,7 @@ function EmptyPage({ icon: Icon, title, text }) {
   return <div className="full-empty"><span className="empty-icon"><Icon size={22} /></span><strong>{title}</strong><p>{text}</p></div>;
 }
 
-function LearningHub() {
+function LegacyLearningHub() {
   const [quizOpen, setQuizOpen] = useState(false);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -270,6 +276,92 @@ function LearningHub() {
   ];
   const score = questions.reduce((total, question, index) => total + (answers[index] === question[2] ? 1 : 0), 0);
   return <section className="learning-hub"><div className="learning-image-card"><img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80" alt="Students collaborating on campus" /><div><span className="eyebrow">LEARNING HUB</span><h2>Build skills that move you forward.</h2><p>Follow focused roadmaps and test your progress with a quick knowledge check.</p></div></div><div className="roadmap-grid"><RoadmapCard title="Assignment roadmap" tone="assignment" steps={["Understand brief", "Plan milestones", "Build and review"]} /><RoadmapCard title="DSA roadmap" tone="dsa" steps={["Foundations", "Patterns and practice", "Timed problem solving"]} /><RoadmapCard title="Web deployment roadmap" tone="deploy" steps={["Build and test", "Configure hosting", "Monitor release"]} /><article className="quiz-card"><div className="quiz-card-heading"><span className="roadmap-icon">?</span><div><span className="toolbar-label">10 QUESTIONS</span><h3>Quick campus quiz</h3></div></div><p>Check your basics across assignments, DSA, and web deployment.</p><button className="roadmap-button" onClick={() => { setQuizOpen(true); setSubmitted(false); }}>Start quiz <ArrowRight size={14} /></button></article></div>{quizOpen && <div className="quiz-overlay"><div className="quiz-modal"><button className="quiz-close" onClick={() => setQuizOpen(false)}>×</button><span className="toolbar-label">KNOWLEDGE CHECK</span><h2>Campus skills quiz</h2>{submitted ? <div className="quiz-result"><strong>{score}/10</strong><p>{score >= 7 ? "Great work. Keep building your momentum." : "Good start. Review the roadmaps and try again."}</p><button className="roadmap-button" onClick={() => { setAnswers({}); setSubmitted(false); }}>Retry quiz</button></div> : <form onSubmit={(event) => { event.preventDefault(); setSubmitted(true); }}><div className="quiz-question-list">{questions.map((question, index) => <fieldset key={question[0]}><legend>{index + 1}. {question[0]}</legend>{question[1].map((option, optionIndex) => <label key={option}><input type="radio" name={`question-${index}`} required onChange={() => setAnswers((current) => ({ ...current, [index]: optionIndex }))} />{option}</label>)}</fieldset>)}</div><button className="primary-button quiz-submit">Submit answers <ArrowRight size={16} /></button></form>}</div></div>}</section>;
+}
+
+function fileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Unable to read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function LearningHub({ user = { name: "" } }) {
+  const [open, setOpen] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [results, setResults] = useState([]);
+  const token = localStorage.getItem("campuspulse_token");
+  const headers = { Authorization: `Bearer ${token}` };
+  useEffect(() => { api.get("/results", { headers }).then(({ data }) => setResults(data.results)).catch(() => undefined); }, []);
+  async function submitProfile(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const [photo, signature] = await Promise.all([fileAsDataUrl(form.get("photo")), fileAsDataUrl(form.get("signature"))]);
+      await api.post("/student-profile", { name: form.get("name"), branch: form.get("branch"), section: form.get("section"), photo, signature }, { headers });
+      setFeedback("Profile submitted to faculty for verification."); setOpen("");
+    } catch (error) { setFeedback(error.response?.data?.message || error.message); }
+  }
+  async function submitAssignment(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const file = await fileAsDataUrl(form.get("file"));
+      await api.post("/assignments", { subject: form.get("subject"), unit: form.get("unit"), topic: form.get("topic"), description: form.get("description"), file }, { headers });
+      setFeedback("Assignment submitted successfully."); setOpen("");
+    } catch (error) { setFeedback(error.response?.data?.message || error.message); }
+  }
+  return <section className="action-hub"><div className="action-card-grid"><ActionCard tone="profile" title="Add student profile" text="Submit your academic identity for faculty verification." button="Add profile" onClick={() => setOpen("profile")} /><ActionCard tone="assignment" title="Submit assignment" text="Choose a subject, add topic details, and upload your work." button="Add assignment" onClick={() => setOpen("assignment")} /><ActionCard tone="result" title="View result" text="See sessional, PUT, and reviewed assignment marks." button="View result" onClick={() => setOpen("result")} /></div>{feedback && <div className="action-feedback">{feedback}</div>}{open === "profile" && <ActionModal title="Add student profile" close={() => setOpen("")}><form className="action-form" onSubmit={submitProfile}><label>Name<input name="name" defaultValue={user.name} required /></label><label>Branch<input name="branch" placeholder="Computer Science" required /></label><label>Section<input name="section" placeholder="A" required /></label><label>Photograph<input name="photo" type="file" accept="image/*" required /></label><label>Signature<input name="signature" type="file" accept="image/*" required /></label><button className="primary-button">Submit profile <ArrowRight size={16} /></button></form></ActionModal>}{open === "assignment" && <ActionModal title="Submit assignment" close={() => setOpen("")}><form className="action-form" onSubmit={submitAssignment}><label>Subject<input name="subject" placeholder="Data Structures" required /></label><label>Unit<input name="unit" placeholder="Unit 2" required /></label><label>Topic name<input name="topic" placeholder="Trees and graphs" required /></label><label>Description<textarea name="description" placeholder="Describe your submission" required /></label><label>Upload assignment<input name="file" type="file" required /></label><button className="primary-button">Submit assignment <ArrowRight size={16} /></button></form></ActionModal>}{open === "result" && <ActionModal title="Your results" close={() => setOpen("")}><ResultSummary results={results} /></ActionModal>}</section>;
+}
+
+function ActionCard({ tone, title, text, button, onClick }) {
+  return <article className={`action-card ${tone}`}><div className="action-card-icon">{tone === "profile" ? "01" : tone === "assignment" ? "02" : "03"}</div><h2>{title}</h2><p>{text}</p><button className="roadmap-button" onClick={onClick}>{button} <ArrowRight size={14} /></button></article>;
+}
+
+function ActionModal({ title, close, children }) {
+  return <div className="action-modal-backdrop"><div className="action-modal"><button className="quiz-close" onClick={close}>×</button><span className="toolbar-label">STUDENT WORKSPACE</span><h2>{title}</h2>{children}</div></div>;
+}
+
+function ResultSummary({ results = [] }) {
+  const result = results[0];
+  return result ? <div className="result-summary"><ResultMark label="Sessional" value={result.sessional} /><ResultMark label="PUT" value={result.put} /><ResultMark label="Assignment" value={result.assignment} /></div> : <EmptyPage icon={FileText} title="Results pending" text="Faculty marks will appear here after evaluation." />;
+}
+
+function ResultMark({ label, value }) {
+  return <div><span>{label}</span><strong>{value}</strong><small>/ 100</small></div>;
+}
+
+function ResultsPage({ results }) {
+  return <div className="dedicated-page results-page"><div className="deadline-summary"><div><span className="toolbar-label">ACADEMIC PERFORMANCE</span><strong>Your results</strong><p>Marks updated by your faculty appear here.</p></div></div><section className="panel"><ResultSummary results={results} /></section></div>;
+}
+
+function SubmissionsPage() {
+  const [submissions, setSubmissions] = useState({ profiles: [], assignments: [] });
+  const [message, setMessage] = useState("");
+  const [marks, setMarks] = useState({});
+  const token = localStorage.getItem("campuspulse_token");
+  const headers = { Authorization: `Bearer ${token}` };
+  useEffect(() => { api.get("/submissions", { headers }).then(({ data }) => setSubmissions(data)); }, []);
+  async function review(id) {
+    try {
+      const response = await api.patch(`/assignments/${id}/review`, { marks: marks[id], feedback: "" }, { headers });
+      setSubmissions((current) => ({ ...current, assignments: current.assignments.map((item) => item.id === id ? response.data.assignment : item) }));
+      setMessage("Assignment marks saved.");
+    } catch (error) { setMessage(error.response?.data?.message || "Unable to save marks."); }
+  }
+
+  function FacultyResultsEditor({ studentIds, headers, setMessage }) {
+    const [values, setValues] = useState({});
+    async function save(studentId) {
+      try {
+        await api.patch(`/results/${studentId}`, values[studentId] || {}, { headers });
+        setMessage("Result marks saved for the student.");
+      } catch (error) { setMessage(error.response?.data?.message || "Unable to save result marks."); }
+    }
+    return <section className="submission-section"><h2>Sessional and PUT marks</h2>{studentIds.length ? studentIds.map((studentId) => <article className="submission-row assignment-review" key={studentId}><div><strong>Student {studentId}</strong><p>Enter marks for the student result card.</p></div><input type="number" min="0" max="100" placeholder="Sessional" onChange={(event) => setValues((current) => ({ ...current, [studentId]: { ...current[studentId], sessional: event.target.value } }))} /><input type="number" min="0" max="100" placeholder="PUT" onChange={(event) => setValues((current) => ({ ...current, [studentId]: { ...current[studentId], put: event.target.value } }))} /><input type="number" min="0" max="100" placeholder="Assignment" onChange={(event) => setValues((current) => ({ ...current, [studentId]: { ...current[studentId], assignment: event.target.value } }))} /><button className="roadmap-button" onClick={() => save(studentId)}>Save result</button></article>) : <p className="muted">Student submissions are required before entering marks.</p>}</section>;
+  }
+  return <div className="dedicated-page submissions-page"><div className="page-toolbar"><div><span className="toolbar-label">FACULTY REVIEW</span><strong>Student submissions</strong></div></div>{message && <div className="action-feedback">{message}</div>}<section className="submission-section"><h2>Student profiles</h2>{submissions.profiles.length ? submissions.profiles.map((profile) => <article className="submission-row" key={profile.id}><img src={profile.photo} alt="" /><div><strong>{profile.name}</strong><p>{profile.branch} · Section {profile.section}</p></div><span className="submission-status">{profile.status}</span></article>) : <EmptyPage icon={Users} title="No profiles submitted" text="New student profiles will appear here." />}</section><section className="submission-section"><h2>Assignments to check</h2>{submissions.assignments.length ? submissions.assignments.map((assignment) => <article className="submission-row assignment-review" key={assignment.id}><div><strong>{assignment.subject} · {assignment.topic}</strong><p>{assignment.unit} · {assignment.status}</p></div><input type="number" min="0" max="100" placeholder="Marks" value={marks[assignment.id] ?? assignment.marks ?? ""} onChange={(event) => setMarks((current) => ({ ...current, [assignment.id]: event.target.value }))} /><button className="roadmap-button" onClick={() => review(assignment.id)}>Save marks</button></article>) : <EmptyPage icon={FileText} title="No assignments submitted" text="Student assignments will appear here for review." />}</section></div>;
 }
 
 function RoadmapCard({ title, tone, steps }) {

@@ -172,6 +172,11 @@ app.patch("/api/assignments/:id/review", requireAuth, requireRole("faculty", "ad
       { returnDocument: "after" }
     );
     if (!result) return res.status(404).json({ message: "Assignment submission not found." });
+    await (await getDatabase()).collection("results").updateOne(
+      { studentId: result.studentId },
+      { $set: { studentId: result.studentId, assignment: parsed.data.marks, updatedBy: req.user.id, updatedAt: new Date().toISOString() }, $setOnInsert: { sessional: 0, put: 0 } },
+      { upsert: true }
+    );
     res.json({ assignment: result });
   } catch (error) { next(error); }
 });
