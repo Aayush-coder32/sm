@@ -204,6 +204,48 @@ function PublishNoticePage({ onPublished }) {
   return <div className="dedicated-page publish-page"><div className="publish-intro"><div><span className="toolbar-label">CAMPUS COMMUNICATION</span><h2>Share what matters.</h2><p>Create a clear update and send it to the right students.</p></div><span className="publish-icon"><FileText size={27} /></span></div><form className="notice-composer" onSubmit={submitNotice}><div className="composer-card"><span className="composer-number">01</span><div><strong>Message basics</strong><small>Give your notice a clear identity.</small></div><label>Notice title<input name="title" placeholder="e.g. Mid-semester examination schedule" minLength="5" maxLength="120" required /></label><label>Summary<textarea name="summary" placeholder="Write a short, useful summary for students..." minLength="5" maxLength="500" required /></label></div><div className="composer-card"><span className="composer-number">02</span><div><strong>Reach the right audience</strong><small>Choose who should see this update.</small></div><label>Category<select name="category" defaultValue="Academic"><option>Academic</option><option>Events</option><option>General</option><option>Examination</option><option>Placement</option></select></label><label>Audience<select name="audience" defaultValue="All students"><option>All students</option><option>General</option><option>Computer Science</option><option>Mechanical Engineering</option><option>Chemical Engineering</option></select></label></div><div className="composer-card"><span className="composer-number">03</span><div><strong>Set the priority</strong><small>Help students understand urgency.</small></div><div className="priority-options"><label><input type="radio" name="priority" value="High" defaultChecked /><span className="priority-choice high-choice">High <small>Important</small></span></label><label><input type="radio" name="priority" value="Medium" /><span className="priority-choice medium-choice">Medium <small>Standard</small></span></label><label><input type="radio" name="priority" value="Low" /><span className="priority-choice low-choice">Low <small>Informational</small></span></label></div></div><div className="composer-card publish-preview-card"><span className="composer-number">04</span><div><strong>Ready to publish?</strong><small>Your notice will be delivered to the selected audience.</small></div><div className="publish-review"><Bell size={17} /><span>Students will see this in <b>Recent notices</b> on their dashboard.</span></div><button className="primary-button publish-button" disabled={submitting}>{submitting ? "Publishing..." : "Publish notice"} <ArrowRight size={17} /></button>{feedback.text && <div className={`publish-feedback ${feedback.type}`}>{feedback.text}</div>}</div></form></div>;
 }
 
+function FacultyCard({ item }) {
+  return <article className="faculty-card"><img src={item.photo} alt={`${item.facultyName} faculty`} /><div className="faculty-card-copy"><span>{item.branch}</span><h3>{item.facultyName}</h3><p>{item.department}</p><img className="faculty-signature" src={item.signature} alt={`${item.facultyName} signature`} /></div></article>;
+}
+
+function MyClassesPage({ onCreated }) {
+  const departments = { "Computer Science": ["Computer Science and Engineering", "Information Technology"], "Mechanical Engineering": ["Mechanical Engineering", "Automobile Engineering"], "Chemical Engineering": ["Chemical Engineering", "Petrochemical Engineering"], "Electrical Engineering": ["Electrical Engineering", "Electronics and Communication"] };
+  const [department, setDepartment] = useState("Computer Science");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
+
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error("Please select an image."));
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Unable to read this image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitClass(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setFeedback({ type: "", text: "" });
+    const form = new FormData(event.currentTarget);
+    try {
+      const [photo, signature] = await Promise.all([readImage(form.get("photo")), readImage(form.get("signature"))]);
+      const { data } = await api.post("/classes", { department: form.get("department"), branch: form.get("branch"), facultyName: form.get("facultyName"), facultyEmail: form.get("facultyEmail"), photo, signature }, { headers: { Authorization: `Bearer ${localStorage.getItem("campuspulse_token")}` } });
+      event.currentTarget.reset();
+      setDepartment("Computer Science");
+      onCreated(data.class);
+      setFeedback({ type: "success", text: "Faculty class card created. It is now available to matching students." });
+    } catch (error) {
+      setFeedback({ type: "error", text: error.response?.data?.message || error.message || "Unable to create this class." });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return <div className="dedicated-page classes-page"><div className="classes-hero"><div><span className="toolbar-label">FACULTY DIRECTORY</span><h2>Build your class.</h2><p>Select a department, choose its branch, then add the faculty profile students should see.</p></div><span className="classes-hero-icon"><Users size={27} /></span></div><form className="class-form" onSubmit={submitClass}><div className="class-form-card"><span className="composer-number">01</span><div><strong>Choose the academic path</strong><small>Department first, then the relevant branch.</small></div><label>Department<select name="department" value={department} onChange={(event) => setDepartment(event.target.value)} required>{Object.keys(departments).map((item) => <option key={item}>{item}</option>)}</select></label><label>Branch<select name="branch" key={department} defaultValue={departments[department][0]} required>{departments[department].map((item) => <option key={item}>{item}</option>)}</select></label></div><div className="class-form-card"><span className="composer-number">02</span><div><strong>Add faculty profile</strong><small>These details will appear on the student dashboard.</small></div><label>Faculty name<input name="facultyName" placeholder="Dr. Priya Sharma" minLength="2" maxLength="100" required /></label><label>Faculty email<input name="facultyEmail" type="email" placeholder="faculty@college.edu" required /></label></div><div className="class-form-card"><span className="composer-number">03</span><div><strong>Upload profile assets</strong><small>Use clear images for a polished faculty card.</small></div><label>Faculty photo<input name="photo" type="file" accept="image/png,image/jpeg,image/webp" required /></label><label>Faculty signature<input name="signature" type="file" accept="image/png,image/jpeg,image/webp" required /></label></div><div className="class-submit-card"><div><strong>Publish class card</strong><small>It will show only when an active class exists for the student's department.</small></div><button className="primary-button" disabled={submitting}>{submitting ? "Creating card..." : "Create class card"} <ArrowRight size={17} /></button>{feedback.text && <div className={`publish-feedback ${feedback.type}`}>{feedback.text}</div>}</div></form></div>;
+}
+
 function EmptyPage({ icon: Icon, title, text }) {
   return <div className="full-empty"><span className="empty-icon"><Icon size={22} /></span><strong>{title}</strong><p>{text}</p></div>;
 }
