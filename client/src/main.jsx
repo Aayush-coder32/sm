@@ -124,6 +124,7 @@ function Login({ selectedRole, setSelectedRole, login, register, error, loading,
 }
 
 function Dashboard({ user, token, onLogout }) {
+  useEffect(() => { api.get("/classes", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData((current) => current ? { ...current, classes: result.classes } : current)); }, [token]);
   const role = roles[user.role]; const [data, setData] = useState(null); const [active, setActive] = useState("Overview"); const [search, setSearch] = useState(""); const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { api.get("/dashboard", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData(result)); }, [token]);
   const nav = user.role === "student" ? ["Overview", "Notices", "My deadlines", "Examinations", "Academic calendar", "AI assistant"] : user.role === "faculty" ? ["Overview", "Publish notice", "My classes", "Submissions", "Calendar"] : ["Overview", "Notice approvals", "Users & roles", "Analytics", "System settings"];
@@ -148,6 +149,7 @@ function renderPage(active, user, data, onPublished) {
   if (active === "Academic calendar") return <CalendarPage deadlines={data.deadlines} exams={data.exams} />;
   if (active === "AI assistant") return <AssistantPage />;
   if (active === "Publish notice") return <PublishNoticePage onPublished={onPublished} />;
+  if (active === "My classes") return <MyClassesPage onCreated={(classRecord) => { data.classes = [classRecord, ...(data.classes || [])]; }} />;
   return <Overview user={user} data={data} />;
 }
 
