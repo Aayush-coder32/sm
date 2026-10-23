@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
 import axios from "axios";
 import "./styles.css";
 
@@ -11,6 +11,7 @@ const roles = { student: { label: "Student", theme: "student", icon: BookOpen },
 function App() {
   const [token, setToken] = useState(localStorage.getItem("campuspulse_token"));
   const [user, setUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
   const [selectedRole, setSelectedRole] = useState("student");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,13 +31,28 @@ function App() {
     finally { setLoading(false); }
   }
 
-  if (!user) return <Login selectedRole={selectedRole} setSelectedRole={setSelectedRole} login={login} error={error} loading={loading} />;
+  if (!user && !showLogin) return <Landing onGetStarted={() => setShowLogin(true)} />;
+  if (!user) return <Login selectedRole={selectedRole} setSelectedRole={setSelectedRole} login={login} error={error} loading={loading} onBack={() => setShowLogin(false)} />;
   return <Dashboard user={user} token={token} onLogout={() => { localStorage.removeItem("campuspulse_token"); setToken(null); setUser(null); }} />;
 }
 
-function Login({ selectedRole, setSelectedRole, login, error, loading }) {
+function Landing({ onGetStarted }) {
+  return <main className="landing-page">
+    <nav className="landing-nav"><div className="landing-brand"><span className="logo-tile"><Sparkles size={18} /></span> CampusPulse</div><div className="landing-links"><a href="#features">Features</a><a href="#portals">Portals</a><a href="#about">About</a></div><button className="landing-login" onClick={onGetStarted}>Sign in <ArrowRight size={16} /></button></nav>
+    <section className="landing-hero">
+      <div className="hero-copy"><div className="hero-pill"><span /> THE SMARTER CAMPUS WORKSPACE</div><h1>Every notice.<br /><span>Right on time.</span></h1><p>CampusPulse brings notices, deadlines, examinations, and campus life into one intelligent workspace built for your entire college community.</p><div className="hero-actions"><button className="hero-button" onClick={onGetStarted}>Explore your portal <ArrowRight size={17} /></button><a href="#features" className="hero-secondary">See how it works <ChevronRight size={16} /></a></div><div className="hero-trust"><div className="avatar-stack"><span>AM</span><span>PS</span><span>NR</span><span>+</span></div><div><strong>Trusted by campus teams</strong><small>Stay informed. Stay ahead.</small></div></div></div>
+      <div className="hero-visual"><div className="visual-glow" /><div className="dashboard-preview"><div className="preview-top"><span className="preview-dots">● ● ●</span><span>CampusPulse <Sparkles size={11} /></span><span>•••</span></div><div className="preview-body"><div className="preview-welcome"><small>MONDAY, OCTOBER 23</small><strong>Good morning, Aarav.</strong><span>Here is what deserves your attention today.</span></div><div className="preview-stats"><div><span>Unread notices</span><b>04</b><small>Needs your attention</small></div><div><span>Upcoming deadlines</span><b>03</b><small>Across your courses</small></div></div><div className="preview-card"><div className="preview-card-title"><span>Latest updates</span><b>Recent notices</b></div><div className="preview-notice"><i /><span><small>EXAMINATION · OCT 21</small><b>End-semester examination registration</b></span><ChevronRight size={15} /></div><div className="preview-notice"><i className="green" /><span><small>EVENTS · OCT 19</small><b>Hackathon 2026 registrations are open</b></span><ChevronRight size={15} /></div></div></div></div><div className="floating-card deadline-float"><span className="float-icon"><Clock3 size={16} /></span><span><small>NEXT DEADLINE</small><b>Database systems project</b><em>Due in 5 days</em></span></div><div className="floating-card ai-float"><Sparkles size={17} /><span>Ask your AI assistant anything <ArrowRight size={13} /></span></div></div>
+    </section>
+    <section className="landing-strip"><span>BUILT FOR THE WHOLE CAMPUS</span><div><b><BookOpen size={17} /> Students</b><b><Users size={17} /> Faculty</b><b><ShieldCheck size={17} /> Administrators</b></div></section>
+    <section id="features" className="feature-section"><div className="section-heading"><p className="eyebrow">ONE PLACE FOR EVERYTHING</p><h2>Less searching.<br /><span>More doing.</span></h2><p>Designed around the rhythm of campus life, CampusPulse makes important information easy to find, understand, and act on.</p></div><div className="feature-grid"><article><span className="feature-icon blue"><Bell size={19} /></span><h3>Never miss a notice</h3><p>Relevant announcements reach the right people, with smart priority and read tracking.</p></article><article><span className="feature-icon green"><CalendarDays size={19} /></span><h3>Deadlines, under control</h3><p>Keep assignments, examinations, and academic milestones visible in one calm view.</p></article><article><span className="feature-icon purple"><Sparkles size={19} /></span><h3>Intelligence built in</h3><p>Turn long notices into clear action points with your AI-powered campus assistant.</p></article></div></section>
+    <section id="portals" className="portal-section"><div><p className="eyebrow">A WORKSPACE FOR EVERY ROLE</p><h2>One campus,<br /><span>three perspectives.</span></h2></div><button className="hero-button" onClick={onGetStarted}>Choose your portal <ArrowRight size={17} /></button></section>
+    <footer id="about"><div className="landing-brand"><span className="logo-tile"><Sparkles size={18} /></span> CampusPulse</div><span>© 2026 CampusPulse · Smarter campus communication.</span></footer>
+  </main>;
+}
+
+function Login({ selectedRole, setSelectedRole, login, error, loading, onBack }) {
   return <main className={`login-shell ${roles[selectedRole].theme}`}>
-    <section className="login-intro"><div className="brand-mark"><Sparkles size={20} /> CampusPulse</div><div className="intro-copy"><p className="eyebrow">ONE CAMPUS. EVERY IMPORTANT MOMENT.</p><h1>Stay ahead of<br /><em>campus life.</em></h1><p className="intro-description">The intelligent command center for notices, deadlines, exams, and everything that keeps your academic journey moving.</p></div><div className="intro-footer"><span><CheckCircle2 size={16} /> Trusted campus updates</span><span><ShieldCheck size={16} /> Secure by design</span></div></section>
+    <section className="login-intro"><button className="back-home" onClick={onBack}>← Back to home</button><div className="brand-mark"><Sparkles size={20} /> CampusPulse</div><div className="intro-copy"><p className="eyebrow">ONE CAMPUS. EVERY IMPORTANT MOMENT.</p><h1>Stay ahead of<br /><em>campus life.</em></h1><p className="intro-description">The intelligent command center for notices, deadlines, exams, and everything that keeps your academic journey moving.</p></div><div className="intro-footer"><span><CheckCircle2 size={16} /> Trusted campus updates</span><span><ShieldCheck size={16} /> Secure by design</span></div></section>
     <section className="login-panel"><div className="mobile-brand"><Sparkles size={19} /> CampusPulse</div><div className="panel-header"><p className="eyebrow">WELCOME BACK</p><h2>Sign in to your portal</h2><p>Select your role to continue to the right workspace.</p></div><div className="role-picker">{Object.entries(roles).map(([key, value]) => { const Icon = value.icon; return <button type="button" className={selectedRole === key ? "role-card active" : "role-card"} onClick={() => setSelectedRole(key)} key={key}><Icon size={19} /><span>{value.label}</span><ChevronRight size={15} /></button>; })}</div><form onSubmit={login} className="login-form"><label>Institutional email<input name="email" type="email" defaultValue={demoAccounts[selectedRole]} required /></label><label>Password<input name="password" type="password" defaultValue={`${selectedRole}123`} minLength="6" required /></label>{error && <div className="error-message">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Signing in..." : `Continue as ${roles[selectedRole].label}`} <ChevronRight size={17} /></button></form><p className="demo-hint">Demo access is pre-filled. Student: student123 · Faculty: faculty123 · Admin: admin123</p></section>
   </main>;
 }
