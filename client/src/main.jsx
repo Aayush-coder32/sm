@@ -5,7 +5,6 @@ import axios from "axios";
 import "./styles.css";
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || "/api" });
-const demoAccounts = { student: "student@college.edu", faculty: "faculty@college.edu", administrator: "admin@college.edu" };
 const roles = { student: { label: "Student", theme: "student", icon: BookOpen }, faculty: { label: "Faculty", theme: "faculty", icon: Users }, administrator: { label: "Administrator", theme: "admin", icon: ShieldCheck } };
 
 function App() {
@@ -31,8 +30,18 @@ function App() {
     finally { setLoading(false); }
   }
 
+  async function register(event) {
+    event.preventDefault(); setError(""); setLoading(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      const { data } = await api.post("/auth/register", { name: form.get("name"), email: form.get("email"), password: form.get("password"), department: form.get("department") });
+      localStorage.setItem("campuspulse_token", data.token); setToken(data.token); setUser(data.user);
+    } catch (requestError) { setError(requestError.response?.data?.message || "Unable to create account."); }
+    finally { setLoading(false); }
+  }
+
   if (!user && !showLogin) return <Landing onGetStarted={() => setShowLogin(true)} />;
-  if (!user) return <Login selectedRole={selectedRole} setSelectedRole={setSelectedRole} login={login} error={error} loading={loading} onBack={() => setShowLogin(false)} />;
+  if (!user) return <Login selectedRole={selectedRole} setSelectedRole={setSelectedRole} login={login} register={register} error={error} loading={loading} onBack={() => setShowLogin(false)} />;
   return <Dashboard user={user} token={token} onLogout={() => { localStorage.removeItem("campuspulse_token"); setToken(null); setUser(null); }} />;
 }
 
@@ -73,10 +82,12 @@ function Landing({ onGetStarted }) {
   </main>;
 }
 
-function Login({ selectedRole, setSelectedRole, login, error, loading, onBack }) {
+function Login({ selectedRole, setSelectedRole, login, register, error, loading, onBack }) {
+  const [mode, setMode] = useState("login");
+  const isRegistering = mode === "register";
   return <main className={`login-shell ${roles[selectedRole].theme}`}>
     <section className="login-intro"><button className="back-home" onClick={onBack}>← Back to home</button><div className="brand-mark"><Sparkles size={20} /> CampusPulse</div><div className="intro-copy"><p className="eyebrow">ONE CAMPUS. EVERY IMPORTANT MOMENT.</p><h1>Stay ahead of<br /><em>campus life.</em></h1><p className="intro-description">The intelligent command center for notices, deadlines, exams, and everything that keeps your academic journey moving.</p></div><div className="intro-footer"><span><CheckCircle2 size={16} /> Trusted campus updates</span><span><ShieldCheck size={16} /> Secure by design</span></div></section>
-    <section className="login-panel"><div className="mobile-brand"><Sparkles size={19} /> CampusPulse</div><div className="panel-header"><p className="eyebrow">WELCOME BACK</p><h2>Sign in to your portal</h2><p>Select your role to continue to the right workspace.</p></div><div className="role-picker">{Object.entries(roles).map(([key, value]) => { const Icon = value.icon; return <button type="button" className={selectedRole === key ? "role-card active" : "role-card"} onClick={() => setSelectedRole(key)} key={key}><Icon size={19} /><span>{value.label}</span><ChevronRight size={15} /></button>; })}</div><form onSubmit={login} className="login-form"><label>Institutional email<input name="email" type="email" defaultValue={demoAccounts[selectedRole]} required /></label><label>Password<input name="password" type="password" defaultValue={`${selectedRole}123`} minLength="6" required /></label>{error && <div className="error-message">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Signing in..." : `Continue as ${roles[selectedRole].label}`} <ChevronRight size={17} /></button></form><p className="demo-hint">Demo access is pre-filled. Student: student123 · Faculty: faculty123 · Admin: admin123</p></section>
+    <section className="login-panel"><div className="mobile-brand"><Sparkles size={19} /> CampusPulse</div><div className="panel-header"><p className="eyebrow">{isRegistering ? "JOIN CAMPUSPULSE" : "WELCOME BACK"}</p><h2>{isRegistering ? "Create your account" : "Sign in to your portal"}</h2><p>{isRegistering ? "Create a student account to access your campus workspace." : "Select your role to continue to the right workspace."}</p></div>{!isRegistering && <div className="role-picker">{Object.entries(roles).map(([key, value]) => { const Icon = value.icon; return <button type="button" className={selectedRole === key ? "role-card active" : "role-card"} onClick={() => setSelectedRole(key)} key={key}><Icon size={19} /><span>{value.label}</span><ChevronRight size={15} /></button>; })}</div>}<form onSubmit={isRegistering ? register : login} className="login-form">{isRegistering && <><label>Full name<input name="name" type="text" placeholder="Your name" required /></label><label>Department<input name="department" type="text" placeholder="e.g. Computer Science" required /></label></>}<label>Institutional email<input name="email" type="email" placeholder="you@college.edu" required /></label><label>Password<input name="password" type="password" placeholder="At least 6 characters" minLength="6" required /></label>{error && <div className="error-message">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? (isRegistering ? "Creating account..." : "Signing in...") : (isRegistering ? "Create account" : `Continue as ${roles[selectedRole].label}`)} <ChevronRight size={17} /></button></form><button type="button" className="auth-switch" onClick={() => { setMode(isRegistering ? "login" : "register"); }}>{isRegistering ? "Already have an account? Sign in" : "New to CampusPulse? Create an account"}</button></section>
   </main>;
 }
 
