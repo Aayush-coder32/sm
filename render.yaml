@@ -2,7 +2,7 @@ services:
   - type: web
     name: campuspulse-api
     runtime: node
-    rootDir: server
+    rootDir: .
     buildCommand: npm install
     startCommand: npm run start --workspace server
     healthCheckPath: /api/health
