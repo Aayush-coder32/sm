@@ -26,6 +26,12 @@ const registerSchema = z.object({
   password: z.string().min(6).max(128),
   department: z.string().trim().min(2).max(80).default("General")
 });
+const contactSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().email(),
+  subject: z.string().trim().min(3).max(120),
+  message: z.string().trim().min(10).max(2000)
+});
 
 function publicUser(user) {
   const { password, ...safeUser } = user;
@@ -51,6 +57,22 @@ function requireRole(...roles) {
 }
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smart-college-assistant-api" }));
+
+app.post("/api/contact", async (req, res, next) => {
+  const parsed = contactSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Please provide a valid name, email, subject, and message." });
+  try {
+    const message = {
+      id: `contact-${Date.now()}`,
+      ...parsed.data,
+      email: parsed.data.email.toLowerCase(),
+      status: "new",
+      createdAt: new Date().toISOString()
+    };
+    await (await getDatabase()).collection("contact_messages").insertOne(message);
+    res.status(201).json({ message: "Thanks for reaching out. Our campus team will get back to you soon." });
+  } catch (error) { next(error); }
+});
 
 app.post("/api/auth/login", async (req, res, next) => {
   const parsed = loginSchema.safeParse(req.body);

@@ -22,7 +22,9 @@ async function connectAndSeed() {
     database.collection("users").createIndex({ id: 1 }, { unique: true }),
     database.collection("users").createIndex({ email: 1 }, { unique: true }),
     database.collection("notices").createIndex({ id: 1 }, { unique: true }),
-    database.collection("deadlines").createIndex({ id: 1 }, { unique: true })
+    database.collection("deadlines").createIndex({ id: 1 }, { unique: true }),
+    database.collection("contact_messages").createIndex({ id: 1 }, { unique: true }),
+    database.collection("contact_messages").createIndex({ createdAt: -1 })
   ]);
   return database;
 }
