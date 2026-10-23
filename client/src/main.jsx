@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, FileText, LayoutDashboard, LogOut, Mail, Menu, Search, ShieldCheck, Sparkles, Users, X } from "lucide-react";
 import axios from "axios";
 import "./styles.css";
 
