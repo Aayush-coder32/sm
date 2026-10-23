@@ -207,7 +207,23 @@ function CalendarPage({ deadlines, exams }) {
 }
 
 function AssistantPage() {
-  return <div className="dedicated-page assistant-page"><div className="assistant-hero"><span className="assistant-orb"><Sparkles size={26} /></span><div><span className="toolbar-label">CAMPUSPULSE AI</span><h2>Your academic co-pilot.</h2><p>Get clear answers about notices, deadlines, courses, and campus life.</p></div></div><div className="assistant-suggestions"><span>Try asking</span>{["What is due this week?", "Summarize my latest notices", "Help me plan my exams"].map((suggestion) => <button key={suggestion}>{suggestion}<ArrowUpRight size={14} /></button>)}</div><div className="assistant-composer"><div className="assistant-message"><Sparkles size={17} /><span>Hi! What would you like to know about your campus?</span></div><div className="composer-row"><input placeholder="Ask anything about your campus..." /><button><ArrowRight size={17} /></button></div></div></div>;
+  const [messages, setMessages] = useState([{ role: "assistant", text: "Hi! I am CampusPulse AI. Ask me about deadlines, examinations, results, or campus activities." }]);
+  const [draft, setDraft] = useState("");
+  const suggestions = ["What is due this week?", "How should I prepare for PUT?", "Show my academic roadmap"];
+  const responses = [
+    "Your upcoming academic work is organized in My deadlines. Start with the earliest due item and break it into smaller milestones.",
+    "For PUT preparation, revise each unit, solve previous questions, and use the DSA and deployment roadmaps in your Overview.",
+    "You can follow the Assignment, DSA, and Web deployment roadmaps from Overview and track your progress step by step.",
+    "Your examination form, academic fee approval, and admit card workflow are available in the Examinations page.",
+    "I recommend checking Recent notices and the Academic calendar every morning for the latest campus updates."
+  ];
+  function sendMessage(message = draft) {
+    const text = message.trim();
+    if (!text) return;
+    setMessages((current) => [...current, { role: "user", text }, { role: "assistant", text: responses[Math.floor(Math.random() * responses.length)] }]);
+    setDraft("");
+  }
+  return <div className="dedicated-page assistant-page"><div className="assistant-hero"><span className="assistant-orb"><Sparkles size={26} /></span><div><span className="toolbar-label">CAMPUSPULSE AI</span><h2>Your academic co-pilot.</h2><p>Get clear answers about deadlines, exams, courses, and campus life.</p></div></div><div className="assistant-suggestions"><span>Try asking</span>{suggestions.map((suggestion) => <button key={suggestion} onClick={() => sendMessage(suggestion)}>{suggestion}<ArrowUpRight size={14} /></button>)}</div><div className="assistant-chat"><div className="assistant-chat-header"><div><span className="toolbar-label">LIVE ASSISTANT</span><h3>Ask anything about your campus</h3></div><span className="assistant-online"><i /> Online</span></div><div className="assistant-messages">{messages.map((message, index) => <div className={`assistant-message ${message.role}`} key={`${message.text}-${index}`}>{message.role === "assistant" && <Sparkles size={16} />}<span>{message.text}</span></div>)}</div><form className="composer-row" onSubmit={(event) => { event.preventDefault(); sendMessage(); }}><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask anything about your campus..." /><button type="submit"><ArrowRight size={17} /></button></form></div></div>;
 }
 
 function PublishNoticePage({ onPublished }) {
