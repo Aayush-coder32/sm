@@ -211,7 +211,7 @@ app.get("/api/exam-status", requireAuth, async (req, res, next) => {
       database.collection("academic_fees").findOne({ studentId: req.user.id }),
       database.collection("examination_forms").findOne({ studentId: req.user.id })
     ]);
-    res.json({ fee, form, admitCardReady: Boolean(fee?.status === "approved" && form?.status === "submitted") });
+    res.json({ fee, form, admitCardReady: Boolean(fee?.status === "approved" && form?.status === "approved") });
   } catch (error) { next(error); }
 });
 
@@ -245,7 +245,24 @@ app.get("/api/exam-requests", requireAuth, requireRole("faculty", "administrator
       database.collection("academic_fees").find({ status: "pending" }).sort({ createdAt: -1 }).toArray(),
       database.collection("examination_forms").find().sort({ submittedAt: -1 }).toArray()
     ]);
-    res.json({ fees, forms });
+    const studentIds = [...new Set([...fees, ...forms].map((request) => request.studentId))];
+    const students = await database.collection("users").find({ id: { $in: studentIds } }).toArray();
+    const studentById = new Map(students.map((student) => [student.id, publicUser(student)]));
+    res.json({ fees: fees.map((fee) => ({ ...fee, student: studentById.get(fee.studentId) })), forms: forms.map((form) => ({ ...form, student: studentById.get(form.studentId) })) });
+  } catch (error) { next(error); }
+});
+
+app.patch("/api/examination-forms/:studentId/review", requireAuth, requireRole("faculty", "administrator"), async (req, res, next) => {
+  const status = z.enum(["approved", "rejected"]).safeParse(req.body.status);
+  if (!status.success) return res.status(400).json({ message: "Choose approve or reject for this examination form." });
+  try {
+    const result = await (await getDatabase()).collection("examination_forms").findOneAndUpdate(
+      { studentId: req.params.studentId },
+      { $set: { status: status.data, reviewedBy: req.user.id, reviewedAt: new Date().toISOString() } },
+      { returnDocument: "after" }
+    );
+    if (!result) return res.status(404).json({ message: "Examination form request not found." });
+    res.json({ form: result });
   } catch (error) { next(error); }
 });
 
