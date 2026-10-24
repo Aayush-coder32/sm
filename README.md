@@ -198,7 +198,9 @@ All routes are prefixed with `/api`.
 | `GET` | `/exam-requests` | Faculty, administrator | List fee requests and examination forms for review. |
 | `PATCH` | `/academic-fees/:studentId/approve` | Faculty, administrator | Approve an academic-fee request. |
 | `PATCH` | `/examination-forms/:studentId/review` | Faculty, administrator | Approve or reject an examination form. |
-| `GET`, `POST` | `/assignments` | Authenticated; create is student | List or submit assignments. |
+| `GET` | `/submissions` | Authenticated | Load student profiles and assignments available to the current role. |
+| `POST` | `/student-profile` | Student | Submit a student profile for faculty verification. |
+| `POST` | `/assignments` | Student | Submit an assignment. |
 | `PATCH` | `/assignments/:id/review` | Faculty, administrator | Review an assignment. |
 | `GET`, `PATCH` | `/results` | Authenticated; update is faculty/admin | Read or update student results. |
 | `POST` | `/contact` | Public | Submit the contact form. |
