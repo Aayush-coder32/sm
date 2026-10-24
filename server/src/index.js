@@ -120,8 +120,8 @@ app.post("/api/contact", async (req, res, next) => {
 app.get("/api/classes", requireAuth, async (req, res, next) => {
   try {
     const database = await getDatabase();
-    const filter = req.user.role === "student" && req.user.department
-      ? { status: "active", department: req.user.department }
+    const filter = req.user.role === "student"
+      ? { status: "active", $or: [{ department: req.user.department }, { branch: req.user.branch }] }
       : { status: "active" };
     const classes = await database.collection("classes").find(filter).sort({ createdAt: -1 }).toArray();
     res.json({ classes });

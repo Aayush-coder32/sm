@@ -129,8 +129,16 @@ function Dashboard({ user, token, onLogout }) {
   useEffect(() => { api.get("/dashboard", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData(result)); }, [token]);
   useEffect(() => {
     Promise.all([api.get("/submissions", { headers: { Authorization: `Bearer ${token}` } }), api.get("/results", { headers: { Authorization: `Bearer ${token}` } })])
-      .then(([submissionsResponse, resultsResponse]) => setData((current) => current ? { ...current, ...submissionsResponse.data, results: resultsResponse.data.results } : current));
+    .then(([submissionsResponse, resultsResponse]) => setData((current) => current ? { ...current, ...submissionsResponse.data, results: resultsResponse.data.results } : current));
   }, [token]);
+  useEffect(() => {
+    if (user.role !== "student") return;
+    const refreshClasses = () => api.get("/classes", { headers: { Authorization: `Bearer ${token}` } }).then(({ data: result }) => setData((current) => current ? { ...current, classes: result.classes } : current)).catch(() => {});
+    const handleFocus = () => refreshClasses();
+    const interval = window.setInterval(refreshClasses, 15000);
+    window.addEventListener("focus", handleFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", handleFocus); };
+  }, [token, user.role]);
   const nav = user.role === "student" ? ["Overview", "Notices", "My deadlines", "Examinations", "Academic calendar", "Results", "AI assistant"] : user.role === "faculty" ? ["Overview", "Publish notice", "My classes", "Submissions", "Exam approvals", "Calendar"] : ["Overview", "Notice approvals", "Users & roles", "Analytics", "System settings"];
   const filteredNotices = useMemo(() => data?.notices.filter((notice) => `${notice.title} ${notice.summary}`.toLowerCase().includes(search.toLowerCase())) || [], [data, search]);
   if (!data) return <div className="loading-screen"><Sparkles /> Loading your workspace...</div>;
