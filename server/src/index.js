@@ -121,7 +121,7 @@ app.get("/api/classes", requireAuth, async (req, res, next) => {
   try {
     const database = await getDatabase();
     const filter = req.user.role === "student"
-      ? { status: "active", $or: [{ department: req.user.department }, { branch: req.user.branch }] }
+      ? { status: "active", branch: { $regex: `^${String(req.user.branch || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } }
       : { status: "active" };
     const classes = await database.collection("classes").find(filter).sort({ createdAt: -1 }).toArray();
     res.json({ classes });

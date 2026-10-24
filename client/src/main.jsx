@@ -265,7 +265,7 @@ function PublishNoticePage({ onPublished }) {
 }
 
 function FacultyCard({ item }) {
-  return <article className="faculty-card"><img src={item.photo} alt={`${item.facultyName} faculty`} /><div className="faculty-card-copy"><span>{item.branch}</span><h3>{item.facultyName}</h3><p>{item.department}</p><img className="faculty-signature" src={item.signature} alt={`${item.facultyName} signature`} /></div></article>;
+  return <article className="faculty-card"><div className="faculty-card-photo-wrap"><img src={item.photo} alt={`${item.facultyName} faculty`} /><span className="faculty-card-label">CLASS FACULTY</span></div><div className="faculty-card-copy"><span className="faculty-card-branch">{item.branch}</span><h3>{item.facultyName}</h3><p>{item.department}</p><div className="faculty-card-footer"><span><ShieldCheck size={13} /> Active class profile</span><img className="faculty-signature" src={item.signature} alt={`${item.facultyName} signature`} /></div></div></article>;
 }
 
 function MyClassesPage({ onCreated }) {
