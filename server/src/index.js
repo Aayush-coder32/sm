@@ -330,7 +330,7 @@ app.get("/api/dashboard", requireAuth, async (req, res, next) => {
       stats: isStudent
         ? { unreadNotices: notices.filter((notice) => notice.status === "Unread").length, pendingAssignments: deadlines.filter((item) => item.type === "Assignment" && item.status !== "Complete").length, upcomingDeadlines: deadlines.length, upcomingExams: exams.length }
         : { publishedNotices: notices.length, pendingApprovals: 7, activeStudents: 1248, upcomingEvents: 12 },
-      notices: user.role === "administrator" ? notices : notices.filter((notice) => notice.audience === "All students" || notice.audience === user.department),
+      notices: user.role === "administrator" ? notices : notices.filter((notice) => notice.audience === "All students" || notice.audience === "General" || notice.audience === user.department || notice.audience === user.branch),
       deadlines: isStudent ? deadlines : [],
       exams: isStudent ? exams : []
     });
@@ -344,7 +344,8 @@ app.get("/api/notices", requireAuth, async (req, res, next) => {
     const notices = await (await getDatabase()).collection("notices").find().sort({ publishedAt: -1 }).toArray();
     const result = notices.filter((notice) => {
       const matchesQuery = !query || `${notice.title} ${notice.summary}`.toLowerCase().includes(query);
-      return matchesQuery && (category === "All" || notice.category === category);
+      const matchesAudience = req.user.role !== "student" || notice.audience === "All students" || notice.audience === "General" || notice.audience === req.user.department || notice.audience === req.user.branch;
+      return matchesQuery && matchesAudience && (category === "All" || notice.category === category);
     });
     res.json({ notices: result });
   } catch (error) { next(error); }
