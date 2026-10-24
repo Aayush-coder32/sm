@@ -397,6 +397,43 @@ function ResultsPage({ results }) {
   return <div className="dedicated-page results-page"><div className="deadline-summary"><div><span className="toolbar-label">ACADEMIC PERFORMANCE</span><strong>Your results</strong><p>Marks updated by your faculty appear here.</p></div></div><section className="panel"><ResultSummary results={results} /></section></div>;
 }
 
+function ExamApprovalsPage() {
+  const [requests, setRequests] = useState({ fees: [], forms: [] });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busyStudent, setBusyStudent] = useState("");
+  const headers = { Authorization: `Bearer ${localStorage.getItem("campuspulse_token")}` };
+  async function load() {
+    try { const { data } = await api.get("/exam-requests", { headers }); setRequests(data); setError(""); }
+    catch (requestError) { setError(requestError.response?.data?.message || "Unable to load examination requests."); }
+  }
+  useEffect(() => { load(); }, []);
+  async function decide(studentId, status) {
+    setBusyStudent(studentId); setMessage(""); setError("");
+    try {
+      if (status === "fee-approved") {
+        await api.patch(`/academic-fees/${studentId}/approve`, {}, { headers });
+        setMessage("Academic fee approved. The student can now submit an examination form.");
+      } else {
+        await api.patch(`/examination-forms/${studentId}/review`, { status }, { headers });
+        setMessage(`Examination form ${status}. Student exam status has been updated.`);
+      }
+      await load();
+    } catch (requestError) { setError(requestError.response?.data?.message || "Unable to update this request."); }
+    finally { setBusyStudent(""); }
+  }
+  const pendingForms = requests.forms.filter((form) => form.status === "submitted");
+  const reviewedForms = requests.forms.filter((form) => form.status !== "submitted");
+  const allPending = requests.fees.length + pendingForms.length;
+  return <div className="dedicated-page exam-approvals-page">
+    <header className="exam-approval-hero"><div><span className="toolbar-label">FACULTY REVIEW DESK</span><h2>Exam approvals</h2><p>Review academic fee requests and student examination forms in one place.</p><div className="exam-approval-summary"><span><b>{allPending}</b> awaiting action</span><span><b>{reviewedForms.length}</b> forms reviewed</span></div></div><span className="exam-approval-hero-icon"><BookOpen size={27} /></span></header>
+    {message && <div className="exam-review-feedback"><CheckCircle2 size={17} />{message}</div>}{error && <div className="exam-review-error"><X size={17} />{error}<button onClick={load}>Try again</button></div>}
+    <div className="exam-approval-overview"><article><span className="exam-overview-icon fee"><FileText size={18} /></span><div><small>FEE REQUESTS</small><strong>{requests.fees.length}</strong><span>Waiting for approval</span></div></article><article><span className="exam-overview-icon form"><BookOpen size={18} /></span><div><small>EXAM FORMS</small><strong>{pendingForms.length}</strong><span>Ready for review</span></div></article><article><span className="exam-overview-icon done"><CheckCircle2 size={18} /></span><div><small>REVIEWED</small><strong>{reviewedForms.length}</strong><span>Decision recorded</span></div></article></div>
+    <section className="exam-review-section"><div className="exam-review-section-heading"><div><span className="eyebrow">01 · FEE CLEARANCE</span><h3>Academic fee requests</h3><p>Fee approval unlocks the examination form for the student.</p></div><span className="exam-queue-count">{requests.fees.length} pending</span></div>{requests.fees.length ? <div className="exam-request-grid">{requests.fees.map((fee) => <article className="exam-request-card fee-request-card" key={fee.id}><div className="exam-request-top"><span className="exam-request-icon fee"><FileText size={18} /></span><span className="exam-status-pill pending">Fee review</span></div><h4>{fee.student?.name || "Student"}</h4><p className="exam-student-meta">{fee.student?.department || "Department not set"}{fee.student?.branch ? ` · ${fee.student.branch}` : ""}</p><div className="exam-request-details"><span>Semester<strong>{fee.semester}</strong></span><span>Amount<strong>₹{Number(fee.amount).toLocaleString("en-IN")}</strong></span><span>Submitted<strong>{new Date(fee.createdAt).toLocaleDateString()}</strong></span></div><button className="exam-approve-button" disabled={busyStudent === fee.studentId} onClick={() => decide(fee.studentId, "fee-approved")}>{busyStudent === fee.studentId ? "Updating..." : "Approve fee"}<CheckCircle2 size={16} /></button></article>)}</div> : <div className="exam-empty-state"><span><CheckCircle2 size={20} /></span><div><strong>No fee requests waiting</strong><p>New student fee requests will appear here.</p></div></div>}</section>
+    <section className="exam-review-section"><div className="exam-review-section-heading"><div><span className="eyebrow">02 · EXAM FORM</span><h3>Examination applications</h3><p>Review the student photo, exam details, and subjects before deciding.</p></div><span className="exam-queue-count">{pendingForms.length} pending</span></div>{pendingForms.length ? <div className="exam-request-grid">{pendingForms.map((form) => <article className="exam-request-card form-request-card" key={form.id}><div className="exam-request-top"><span className="exam-request-icon form"><BookOpen size={18} /></span><span className="exam-status-pill pending">Needs review</span></div><div className="exam-applicant"><img src={form.photograph} alt={`${form.student?.name || "Student"} photo`} onError={(event) => { event.currentTarget.style.display = "none"; }} /><div><h4>{form.student?.name || "Student"}</h4><p>{form.student?.department || "Department not set"}{form.student?.branch ? ` · ${form.student.branch}` : ""}</p></div></div><div className="exam-request-details"><span>Examination<strong>{form.examType}</strong></span><span>Semester<strong>{form.semester}</strong></span><span>Subjects<strong>{form.subjects}</strong></span><span>Submitted<strong>{new Date(form.submittedAt).toLocaleDateString()}</strong></span></div><div className="exam-decision-actions"><button className="exam-approve-button" disabled={busyStudent === form.studentId} onClick={() => decide(form.studentId, "approved")}>{busyStudent === form.studentId ? "Updating..." : "Approve form"}<CheckCircle2 size={16} /></button><button className="exam-reject-button" disabled={busyStudent === form.studentId} onClick={() => decide(form.studentId, "rejected")}>Reject<X size={16} /></button></div></article>)}</div> : <div className="exam-empty-state"><span><FileText size={20} /></span><div><strong>No examination forms waiting</strong><p>Student applications will appear here after submission.</p></div></div>}{reviewedForms.length > 0 && <div className="exam-reviewed-list"><h4>Recently reviewed</h4>{reviewedForms.map((form) => <article key={form.id}><div><strong>{form.student?.name || "Student"}</strong><span>{form.examType} · {form.semester}</span></div><span className={`exam-status-pill ${form.status === "approved" ? "approved" : "rejected"}`}>{form.status}</span></article>)}</div>}</section>
+  </div>;
+}
+
 function SubmissionsPage() {
   const [submissions, setSubmissions] = useState({ profiles: [], assignments: [] });
   const [message, setMessage] = useState("");
