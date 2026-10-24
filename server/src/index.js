@@ -23,7 +23,7 @@ app.use(cors({
     return callback(new Error("Origin is not allowed by the server."));
   }
 }));
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));
 
 const loginSchema = z.object({
   email: z.string().email(),
