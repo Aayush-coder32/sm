@@ -1,11 +1,33 @@
-﻿# CampusPulse
+﻿<div align="center">
 
-> A role based campus workspace for notices, academic timelines, faculty communication, and examination workflows.
+# ✨ CampusPulse
+
+### Your campus, connected.
+
+An all-in-one campus workspace for announcements, academic timelines, faculty communication, and student services.
+
+<p>
+  <a href="#features">Features</a> ·
+  <a href="#roles-and-workflows">How it works</a> ·
+  <a href="#quick-start">Get started</a> ·
+  <a href="#api-reference">API</a> ·
+  <a href="#security-notes">Security</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="#copyright-and-license">License</a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18" />
+  <img src="https://img.shields.io/badge/JavaScript-ESM-F7DF1E?logo=javascript&logoColor=222" alt="JavaScript ES modules" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js 20 or later" />
+  <img src="https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white" alt="Express 4" />
+  <img src="https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white" alt="MongoDB" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="Apache License 2.0" /></a>
+</p>
+
+</div>
 
 CampusPulse brings student, faculty, and administrator tools together in one responsive web application. Faculty can publish notices and manage branch specific class profiles. Students can follow campus updates, submit academic requests, and track examination approvals.
-
-[Features](#features) · [Technology](#technology) · [Quick start](#quick-start) · [Configuration](#configuration) · [API](#api-reference) · [Deployment](#deployment) · [Contributing](CONTRIBUTING.md) · [License](#license)
-
 ## Contents
 
 - [Features](#features)
@@ -260,3 +282,4 @@ Copyright (c) 2025 CampusPulse contributors. All rights reserved except as expre
 This project is licensed under the [Apache License, Version 2.0](LICENSE). You may use, modify, and distribute the software under that license. Contributions submitted to this repository are provided under the same license, as described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 The project license applies to the project code and documentation. Third party dependencies, fonts, and media assets may have separate terms; review their respective licenses before reuse.
+
