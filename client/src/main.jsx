@@ -153,7 +153,7 @@ function pageSubtitle(active) {
 }
 
 function renderPage(active, user, data, onPublished) {
-  if (active === "Overview") return <><Overview user={user} data={data} />{user.role === "student" && data.classes?.length ? <section className="panel student-classes-panel overview-classes"><div className="panel-title"><div><p className="eyebrow">YOUR FACULTY</p><h2>Class faculty</h2></div><span className="class-count">{data.classes.length} active</span></div><div className="student-class-grid">{data.classes.map((item) => <FacultyCard key={item.id} item={item} />)}</div></section> : null}</>;
+  if (active === "Overview") { const studentClasses = user.role === "student" ? (data.classes || []).filter((item) => item.branch?.trim().toLowerCase() === user.branch?.trim().toLowerCase()) : []; return <><Overview user={user} data={data} />{studentClasses.length ? <section className="panel student-classes-panel overview-classes"><div className="panel-title"><div><p className="eyebrow">YOUR FACULTY</p><h2>Class faculty</h2></div><span className="class-count">{studentClasses.length} active</span></div><div className="student-class-grid">{studentClasses.map((item) => <FacultyCard key={item.id} item={item} />)}</div></section> : null}</>; }
   if (active === "Notices") return <NoticesPage notices={data.notices} />;
   if (active === "My deadlines") return <DeadlinesPage deadlines={data.deadlines} user={user} />;
   if (active === "Examinations") return <ExaminationsPage exams={data.exams} />;
